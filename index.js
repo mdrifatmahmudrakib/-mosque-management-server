@@ -43,8 +43,26 @@ async function run() {
         const eventCollection = client.db('allCampaign').collection('events');
         const expertsCollection = client.db('allCampaign').collection('experts');
         const userCollection = client.db('allCampaign').collection('users');
+        const imamCollection = client.db('allCampaign').collection('imam');
+        // const KhutbaCollection = client.db('allCampaign').collection('imam');
 
 
+        const verifyAdmin = async (req, res, next) => {
+            const requester = req.decoded.email;
+            const requesterAccount = await userCollection.findOne({ email: requester });
+            if (requesterAccount.role === 'admin') {
+                next();
+            }
+            else {
+                res.status(403).send({ message: 'forbidden' });
+            }
+        }
+
+        app.post('/imam', async (req, res) => {
+            const imam = req.body;
+            const result = await imamCollection.insertOne(imam);
+            res.send(result);
+        });
 
         // load all campaigns from mongodb
 
@@ -223,11 +241,18 @@ async function run() {
 
         // **************User**************
 
+        app.get('/user', async (req, res) => {
+            const users = await userCollection.find().toArray();
+            res.send(users);
+
+
+        });
+
         //user info save to database 
         app.put('/user/:email', async (req, res) => {
             const email = req.params.email;
             const user = req.body;
-            console.log(user)
+            // console.log(user)
             const filter = { email: email };
             const options = { upsert: true };
             const updateDoc = {
@@ -237,14 +262,12 @@ async function run() {
             const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
             res.send({ result, token });
 
-            // res.send(result);
+
         })
 
 
-        app.get('/user', verifyJWT, async (req, res) => {
-            const users = await userCollection.find().toArray();
-            res.send(users);
-        });
+
+
 
         // app.get('/user', async (req, res) => {
         //     const query = {};
@@ -257,7 +280,7 @@ async function run() {
 
         // an admin can only make admin
 
-        app.get('/admin/:email', async (req, res) => {
+        app.get('/admin/:email', verifyJWT, async (req, res) => {
             const email = req.params.email;
             const user = await userCollection.findOne({ email: email });
             const isAdmin = user.role === 'admin';
