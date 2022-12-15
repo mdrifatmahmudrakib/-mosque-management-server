@@ -1,13 +1,14 @@
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
+const SECRET_KEY = 'sk_test_51LXB94DzzWrIfioBAGKjJTvCKDXX8mqZmhTcrmuxT0YVoazfdzus4m7eDFLgMqZw9DMTz9Ej9MMbat1X8Pu9DJPy00YlqYqTiA';
+const stripe = require("stripe")(SECRET_KEY);
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 const port = process.env.PORT || 5000;
 
 const app = express();
-
 
 app.use(cors());
 app.use(express.json());
@@ -41,10 +42,12 @@ async function run() {
 
         const helpCollection = client.db('allCampaign').collection('campaign');
         const eventCollection = client.db('allCampaign').collection('events');
+        const grantInfoCollection = client.db('allCampaign').collection('grantInfo');
         const expertsCollection = client.db('allCampaign').collection('experts');
         const userCollection = client.db('allCampaign').collection('users');
         const imamCollection = client.db('allCampaign').collection('imam');
-        // const KhutbaCollection = client.db('allCampaign').collection('imam');
+
+        const KhutbaCollection = client.db('allCampaign').collection('Khutba');
 
 
         const verifyAdmin = async (req, res, next) => {
@@ -66,12 +69,46 @@ async function run() {
 
         // load all campaigns from mongodb
 
-        app.get('/allcampaign', async (req, res) => {
+        // app.get('/campaigns', async (req, res) => {
+        //     console.log('query', req.query);
+        //     const query = {};
+        //     const cursor = helpCollection.find(query);
+        //     const  = await cursor.toArray();
+        //     res.send(campaignes);
+        // });
+
+
+
+        app.get('/campaigns', async (req, res) => {
+            console.log('query', req.query);
+            const page = parseInt(req.query.page);
+            const size = parseInt(req.query.size);
+
             const query = {};
             const cursor = helpCollection.find(query);
-            const campaignes = await cursor.toArray();
+            let campaignes;
+            if (page || size) {
+                // 0 --> skip: 0 get: 0-10(10): 
+                // 1 --> skip: 1*10 get: 11-20(10):
+                // 2 --> skip: 2*10 get: 21-30 (10):
+                // 3 --> skip: 3*10 get: 21-30 (10):
+                campaignes = await cursor.skip(page * size).limit(size).toArray();
+            }
+            else {
+                campaignes = await cursor.toArray();
+            }
+
             res.send(campaignes);
         });
+
+
+
+        app.get('/campaignCount', async (req, res) => {
+
+            const count = await helpCollection.estimatedDocumentCount();
+            res.send({ count });
+        });
+
 
         // app.put('/campaign/:id', async (req, res) => {
         //     const id = req.params.id;
@@ -93,10 +130,11 @@ async function run() {
         //     res.send(campaign);
         // })
 
-        app.get('/allcampaign/:campaignId', async (req, res) => {
-            const id = req.params.campaignId;
-            const filter = { _id: ObjectId(id) };
-            const result = await helpCollection.findOne(filter);
+        app.get('/campaign/:id', async (req, res) => {
+            const id = req.params.id;
+
+            const query = { _id: ObjectId(id) };
+            const result = await helpCollection.findOne(query);
             res.send(result)
         })
 
@@ -112,7 +150,7 @@ async function run() {
 
 
         //add campaign
-        app.post('/allcampaign', async (req, res) => {
+        app.post('/campaigns', async (req, res) => {
             const newcampaign = req.body;
             const result = await helpCollection.insertOne(newcampaign);
             res.send(result);
@@ -232,7 +270,30 @@ async function run() {
 
 
 
+        //khutba add
 
+        app.post("/addKhutba", async (req, res) => {
+            const postKhutba = req.body;
+            const result = await KhutbaCollection.insertOne(postKhutba);
+            res.send(result);
+        });
+
+        //get khutba
+        app.get('/allKhutba', async (req, res) => {
+            const query = {};
+            const allKhutba = await KhutbaCollection.find(query).toArray();
+            res.send(allKhutba);
+        });
+
+        // //delete khutba
+        // app.delete('/allKhutba/:id', async (req, res) => {
+        //     const id = req.params.id;
+        //     const filter = {
+        //         _id: ObjectId(id)
+        //     };
+        //     const result = await khutbaCollection.deleteOne(filter);
+        //     res.send(result);
+        // })
 
 
 
@@ -310,6 +371,42 @@ async function run() {
 
 
 
+        ///donate
+
+        app.post('/grant-info', async (req, res) => {
+            const data = req.body;
+            const result = await grantInfoCollection.insertOne(data);
+            res.send(result);
+        });
+
+        app.get('/grant-info', async (req, res) => {
+            const result = await grantInfoCollection.find().toArray();
+            res.send(result)
+        });
+
+        app.get('/grant-info/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) }
+            const result = await grantInfoCollection.findOne(filter);
+            res.send(result)
+        });
+
+        app.post('/create-payment-intent', async (req, res) => {
+            // const { price } = req.body; // or 
+            const data = req.body;
+            const amount = data.amount;
+            const price = amount * 100;
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: price, // dollar needs to be converted to cents
+                currency: 'usd',
+                "payment_method_types": [
+                    "card"
+                ],
+            });
+            res.send({
+                clientSecret: paymentIntent.client_secret,
+            })
+        })
 
 
 
