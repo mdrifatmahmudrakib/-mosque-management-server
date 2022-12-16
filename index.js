@@ -67,15 +67,6 @@ async function run() {
             res.send(result);
         });
 
-        // load all campaigns from mongodb
-
-        // app.get('/campaigns', async (req, res) => {
-        //     console.log('query', req.query);
-        //     const query = {};
-        //     const cursor = helpCollection.find(query);
-        //     const  = await cursor.toArray();
-        //     res.send(campaignes);
-        // });
 
 
 
@@ -110,25 +101,7 @@ async function run() {
         });
 
 
-        // app.put('/campaign/:id', async (req, res) => {
-        //     const id = req.params.id;
-        //     const data = req.body;
-        //     const filter = { _id: ObjectId(id) };
-        //     const updateDoc = {
-        //         $set: data
-        //     };
-        //     const options = { upsert: true };
-        //     const result = await helpCollection.updateOne(filter, updateDoc, options);
-        //     res.send(result);
-        // })
 
-
-        // app.get('/campaign/:id', async (req, res) => {
-        //     const id = req.params.id;
-        //     const query = { _id: ObjectId(id) };
-        //     const campaign = await helpCollection.findOne(query);
-        //     res.send(campaign);
-        // })
 
         app.get('/campaign/:id', async (req, res) => {
             const id = req.params.id;
@@ -139,12 +112,6 @@ async function run() {
         })
 
 
-        // app.get('/events/:eventsId', async (req, res) => {
-        //     const id = req.params.eventsId;
-        //     const filter = { _id: ObjectId(id) };
-        //     const events = await eventCollection.findOne(filter);
-        //     res.send(events)
-        // })
 
 
 
@@ -155,6 +122,8 @@ async function run() {
             const result = await helpCollection.insertOne(newcampaign);
             res.send(result);
         });
+
+
 
 
 
@@ -188,27 +157,34 @@ async function run() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
         // load all event from mongodb
 
         app.get('/events', async (req, res) => {
+            const page = parseInt(req.query.page);
+            const size = parseInt(req.query.size);
+
             const query = {};
             const cursor = eventCollection.find(query);
-            const events = await cursor.toArray();
+
+            let events;
+            if (page || size) {
+                events = await cursor.skip(page * size).limit(size).toArray();
+            }
+            else {
+                events = await cursor.toArray();
+            }
+
             res.send(events);
         });
 
 
+
+
+        app.get('/eventCount', async (req, res) => {
+
+            const count = await eventCollection.estimatedDocumentCount();
+            res.send({ count });
+        });
 
         app.get('/event/:id', async (req, res) => {
             const id = req.params.id;
