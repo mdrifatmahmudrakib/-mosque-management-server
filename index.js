@@ -61,6 +61,42 @@ async function run() {
             }
         }
 
+
+
+
+
+
+        app.post("/allKhutba", async (req, res) => {
+            const postKhutba = req.body;
+            const result = await KhutbaCollection.insertOne(postKhutba);
+            res.send(result);
+        });
+
+        //get khutba
+        app.get('/allKhutba', async (req, res) => {
+            const query = {};
+            const allKhutba = await KhutbaCollection.find(query).toArray();
+            res.send(allKhutba);
+        });
+
+        //delete khutba
+        app.delete('/allKhutba/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = {
+                _id: ObjectId(id)
+            };
+            const result = await KhutbaCollection.deleteOne(filter);
+            res.send(result);
+        })
+
+
+
+
+
+
+
+
+
         app.post('/imam', async (req, res) => {
             const imam = req.body;
             const result = await imamCollection.insertOne(imam);
@@ -285,6 +321,9 @@ async function run() {
 
         });
 
+
+
+
         //user info save to database 
         app.put('/user/:email', async (req, res) => {
             const email = req.params.email;
@@ -302,7 +341,16 @@ async function run() {
 
         })
 
-
+        //delete event
+        app.delete('/user/:email', async (req, res) => {
+            const email = req.params.email;
+            // console.log(id)
+            const filter = { email: email };
+            // const query = { _id: ObjectId(id) };
+            const result = await userCollection.deleteOne(filter);
+            // const event = await eventCollection.deleteOne(query);
+            res.send(result);
+        });
 
 
 
@@ -344,7 +392,14 @@ async function run() {
 
         })
 
-
+        //delete event
+        app.delete('/event/:id', async (req, res) => {
+            const id = req.params.id;
+            console.log(id)
+            const query = { _id: ObjectId(id) };
+            const event = await eventCollection.deleteOne(query);
+            res.send(event);
+        });
 
 
         ///donate
