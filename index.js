@@ -280,6 +280,12 @@ async function run() {
         });
 
 
+        app.post("/experts", async (req, res) => {
+            const expertAdd = req.body;
+            const result = await expertsCollection.insertOne(expertAdd);
+            res.send(result);
+        });
+
 
 
         //khutba add
