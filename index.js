@@ -46,8 +46,8 @@ async function run() {
         const expertsCollection = client.db('allCampaign').collection('experts');
         const userCollection = client.db('allCampaign').collection('users');
         const imamCollection = client.db('allCampaign').collection('imam');
-
         const KhutbaCollection = client.db('allCampaign').collection('Khutba');
+        const jammatCollection = client.db('allCampaign').collection('jamaat');
 
 
         const verifyAdmin = async (req, res, next) => {
@@ -60,6 +60,75 @@ async function run() {
                 res.status(403).send({ message: 'forbidden' });
             }
         }
+
+
+        // add jamaat
+        app.post("/jamaattime", async (req, res) => {
+            const jamaat = req.body;
+            const result = await jammatCollection.insertOne(jamaat);
+            res.send(result);
+        });
+
+
+
+        app.get('/jamaattime', async (req, res) => {
+            const query = {};
+            const alljamaat = await jammatCollection.find(query).toArray();
+            res.send(alljamaat);
+        });
+
+
+
+        app.get('/jamaattime/:id', async (req, res) => {
+            const id = req.params.id;
+
+            const query = { _id: ObjectId(id) };
+            const result = await jammatCollection.findOne(query);
+            res.send(result)
+        })
+
+
+
+        //update
+        app.put("/jamaattime/:id", async (req, res) => {
+            const id = req.params.id;
+            const jamaat = req.body;
+
+            const result = await jammatCollection.updateOne(
+                { _id: ObjectId(id) }, // Find Data by query many time query type is "_id: id" Cheack on database
+                {
+                    $set: jamaat, // Set updated Data
+                },
+                { upsert: true } // define work
+            );
+            res.send({ result });
+        });
+
+
+
+
+
+        // app.put('/jamaattime/:id', async (req, res) => {
+        //     const id = req.params.id;
+        //     const filter = { _id: ObjectId(id) };
+        //     const jamaat = req.body;
+        //     const option = { upsert: true };
+        //     const updatedjamaattime = {
+        //         $set: {
+        //             fajr: jamaat.fajr,
+
+        //             zuhr: jamaat.zuhr,
+        //             asr: jamaat.asr,
+        //             magrib: jamaat.magrib,
+        //             isha: jamaat.isha,
+
+        //         }
+
+        //     }
+        //     const result = await jammatCollection.updateOne(filter, updatedjamaattime, option);
+        //     res.send(result);
+        // })
+
 
 
 
