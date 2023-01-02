@@ -1,8 +1,18 @@
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
-const SECRET_KEY = 'sk_test_51LXB94DzzWrIfioBAGKjJTvCKDXX8mqZmhTcrmuxT0YVoazfdzus4m7eDFLgMqZw9DMTz9Ej9MMbat1X8Pu9DJPy00YlqYqTiA';
-const stripe = require("stripe")(SECRET_KEY);
+
+require('dotenv').config();
+const SSLCommerzPayment = require("sslcommerz-lts");
+// sslcommarz
+const store_id = process.env.STORE_ID
+const store_passwd = process.env.STORE_PASS
+
+const is_live = false; //true for live, false for sandbox
+
+
+// const SECRET_KEY = 'sk_test_51LXB94DzzWrIfioBAGKjJTvCKDXX8mqZmhTcrmuxT0YVoazfdzus4m7eDFLgMqZw9DMTz9Ej9MMbat1X8Pu9DJPy00YlqYqTiA';
+// const stripe = require("stripe")(SECRET_KEY);
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
@@ -60,6 +70,16 @@ async function run() {
                 res.status(403).send({ message: 'forbidden' });
             }
         }
+
+
+        app.post('/jwt', (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
+            res.send({ token })
+        })
+
+
+
 
 
         // add jamaat
@@ -339,6 +359,26 @@ async function run() {
 
 
 
+        // // load all experts from mongodb
+
+        // app.get('/experts', async (req, res) => {
+        //     const query = {};
+        //     const cursor = expertsCollection.find(query);
+        //     const experts = await cursor.toArray();
+        //     res.send(experts);
+        // });
+
+
+        // app.post("/experts", async (req, res) => {
+        //     const expertAdd = req.body;
+        //     const result = await expertsCollection.insertOne(expertAdd);
+        //     res.send(result);
+        // });
+
+
+
+
+
         // load all experts from mongodb
 
         app.get('/experts', async (req, res) => {
@@ -348,12 +388,76 @@ async function run() {
             res.send(experts);
         });
 
+        //get experts by role
 
+
+        app.get('/experts/:role', async (req, res) => {
+            const role = req.params.role;
+            const query = { role: role }
+            const user = await expertsCollection.find(query).toArray();
+
+            res.send(user);
+        })
+
+        //post experts
         app.post("/experts", async (req, res) => {
             const expertAdd = req.body;
             const result = await expertsCollection.insertOne(expertAdd);
             res.send(result);
         });
+
+        //delete experts
+        app.delete('/experts/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = {
+                _id: ObjectId(id)
+            };
+            const result = await expertsCollection.deleteOne(filter);
+            res.send(result);
+        })
+
+
+        //get experts by id
+
+        app.get('/expertSingle/:id', async (req, res) => {
+            const id = req.params.id;
+
+            const query = { _id: ObjectId(id) };
+            const result = await expertsCollection.findOne(query);
+            res.send(result)
+        })
+        //update
+        app.put('/experts/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) };
+            const expert = req.body;
+            const option = { upsert: true };
+            const updatedExpert = {
+                $set: {
+                    name: expert.name,
+
+                    facebook: expert.facebook,
+                    twitter: expert.twitter,
+                    instagram: expert.instagram,
+                    google: expert.google,
+                    img: expert.img,
+                    short_description: expert.short_description,
+                    role: expert.role,
+                    phone: expert.phone
+                }
+
+            }
+            const result = await expertsCollection.updateOne(filter, updatedExpert, option);
+            res.send(result);
+        })
+
+
+
+
+
+
+
+
 
 
 
@@ -397,6 +501,24 @@ async function run() {
         });
 
 
+        app.get('/puser/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email };
+            const users = await userCollection.findOne(query);
+            res.send(users);
+
+
+        });
+
+
+        // app.get('/event/:id', async (req, res) => {
+        //     const id = req.params.id;
+        //     const query = { _id: ObjectId(id) };
+        //     const event = await eventCollection.findOne(query);
+        //     res.send(event);
+        // })
+
+
 
 
         //user info save to database 
@@ -410,11 +532,18 @@ async function run() {
                 $set: user,
             };
             const result = await userCollection.updateOne(filter, updateDoc, options);
-            const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
+            const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '8h' })
             res.send({ result, token });
 
 
         })
+
+
+
+
+
+
+
 
         //delete event
         app.delete('/user/:email', async (req, res) => {
@@ -426,6 +555,60 @@ async function run() {
             // const event = await eventCollection.deleteOne(query);
             res.send(result);
         });
+
+
+
+        //update
+        app.put('/puser/:email', async (req, res) => {
+            const email = req.params.email;
+            const filter = { email: email };
+            const expert = req.body;
+            const option = { upsert: true };
+            const updatedExpert = {
+                $set: {
+                    phone: expert.phone,
+                    about: expert.about,
+                    birth: expert.birth,
+                    link: expert.link,
+                    profilelink: expert.profilelink,
+                    gender: expert.gender,
+                    street: expert.street,
+                    city: expert.city,
+                    state: expert.state,
+                    zip: expert.zip,
+
+                    // facebook: expert.facebook,
+                    // twitter: expert.twitter,
+                    // instagram: expert.instagram,
+                    // google: expert.google,
+                    // img: expert.img,
+                    // short_description: expert.short_description,
+                    // role: expert.role,
+                    // phone: expert.phone
+                }
+
+            }
+            const result = await userCollection.updateOne(filter, updatedExpert, option);
+            res.send(result);
+        })
+
+
+
+
+
+        // app.get('/puser/:email', async (req, res) => {
+        //     const email = req.params.email;
+        //     const query = {
+        //         email: email
+
+        //     };
+        //     const allbuyer = await userCollection.find(query).toArray();
+        //     res.send(allbuyer);
+        // });
+
+
+
+
 
 
 
@@ -518,7 +701,134 @@ async function run() {
 
 
 
+        //ssl comnmerce 
+        app.post("/checkout", async (req, res) => {
+            const order = req.body;
+            const { amount, telEmail, postCode, name } = order;
 
+            if (!amount || !telEmail || !postCode || !name) {
+                return res.send({ error: "please provide all the information" })
+            }
+
+
+            const transactionId = new ObjectId().toString();
+
+            const data = {
+                total_amount: order.amount,
+                currency: order.currency,
+                tran_id: transactionId, // use unique tran_id for each api call
+                success_url: `http://localhost:5000/donation/success?transactionId=${transactionId}`,
+                fail_url: `http://localhost:5000/donation/fail?transactionId=${transactionId}`,
+                cancel_url: "http://localhost:5000/donation/cancel",
+                ipn_url: "http://localhost:3030/ipn",
+                shipping_method: "Courier",
+                product_name: order.name,
+                product_category: "Electronic",
+                product_profile: "general",
+                cus_name: order.userName,
+                cus_email: order.telEmail,
+                cus_add1: "Dhaka",
+                cus_add2: "Dhaka",
+                cus_city: "Dhaka",
+                cus_state: "Dhaka",
+                cus_postcode: "1000",
+                cus_country: "Bangladesh",
+                cus_phone: "01711111111",
+                cus_fax: "01711111111",
+                ship_name: "Customer Name",
+                ship_add1: "Dhaka",
+                ship_add2: "Dhaka",
+                ship_city: "Dhaka",
+                ship_state: "Dhaka",
+                ship_postcode: order.postCode,
+                ship_country: "Bangladesh",
+            };
+
+
+            const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live);
+            sslcz.init(data).then((apiResponse) => {
+                // Redirect the user to payment gateway
+                let GatewayPageURL = apiResponse.GatewayPageURL;
+                console.log(apiResponse);
+                grantInfoCollection.insertOne({
+                    ...order,
+                    // amount: grantInfoCollection.amount,
+                    transactionId,
+                    paid: false,
+                });
+                res.send({ url: GatewayPageURL });
+            });
+        });
+
+
+        //donation post
+        app.post("/donation/success", async (req, res) => {
+            const { transactionId } = req.query;
+            if (!transactionId) {
+                return res.redirect("http://localhost:3000/donation/fail");
+            }
+            const result = await grantInfoCollection.updateOne(
+                { transactionId },
+                { $set: { paid: true, paidAt: new Date() } }
+            );
+
+            if (result.modifiedCount > 0) {
+                res.redirect(
+                    `http://localhost:3000/donation/success?transactionId=${transactionId}`
+                );
+            }
+        });
+
+        //faield donation
+        app.post("/donation/fail", async (req, res) => {
+            const { transactionId } = req.query;
+            if (!transactionId) {
+                return res.redirect("http://localhost:3000/donation/fail");
+            }
+            const result = await grantInfoCollection.deleteOne({ transactionId });
+
+            if (result.deletedCount) {
+                res.redirect(
+                    "http://localhost:3000/donation/fail"
+                );
+            }
+
+        })
+
+
+
+        // donation info get
+
+        app.get("/donation-info/by-transaction-id/:id", async (req, res) => {
+            const { id } = req.params;
+            const donation = await grantInfoCollection.findOne({ transactionId: id });
+            res.send(donation);
+        })
+
+
+        app.get('/checkout/:telEmail/:paid', async (req, res) => {
+            const telEmail = req.params.telEmail;
+            const query = {
+                telEmail: telEmail,
+                paid: true
+
+            };
+            const allbuyer = await grantInfoCollection.find(query).toArray();
+            res.send(allbuyer);
+        });
+
+
+
+        //get all user donation for admin routes
+        app.get('/checkout/:paid', async (req, res) => {
+            const paid = req.params.paid;
+            const query = {
+                paid: true
+
+            };
+            const allbuyer = await grantInfoCollection.find(query).toArray();
+            res.send(allbuyer);
+        });
 
 
 
