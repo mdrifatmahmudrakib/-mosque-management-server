@@ -4,15 +4,13 @@ const jwt = require('jsonwebtoken');
 
 require('dotenv').config();
 const SSLCommerzPayment = require("sslcommerz-lts");
+
 // sslcommarz
 const store_id = process.env.STORE_ID
 const store_passwd = process.env.STORE_PASS
 
 const is_live = false; //true for live, false for sandbox
 
-
-// const SECRET_KEY = 'sk_test_51LXB94DzzWrIfioBAGKjJTvCKDXX8mqZmhTcrmuxT0YVoazfdzus4m7eDFLgMqZw9DMTz9Ej9MMbat1X8Pu9DJPy00YlqYqTiA';
-// const stripe = require("stripe")(SECRET_KEY);
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
@@ -46,6 +44,11 @@ function verifyJWT(req, res, next) {
 }
 
 
+
+
+
+
+
 async function run() {
     try {
         await client.connect();
@@ -60,16 +63,21 @@ async function run() {
         const jammatCollection = client.db('allCampaign').collection('jamaat');
 
 
+
+
         const verifyAdmin = async (req, res, next) => {
             const requester = req.decoded.email;
-            const requesterAccount = await userCollection.findOne({ email: requester });
-            if (requesterAccount.role === 'admin') {
+            const requesterAccount = await userCollection.findOne({
+                email: requester,
+            });
+            if (requesterAccount.role === "admin") {
                 next();
+            } else {
+                res.status(403).send({ message: "forbidden" });
             }
-            else {
-                res.status(403).send({ message: 'forbidden' });
-            }
-        }
+        };
+
+
 
 
         app.post('/jwt', (req, res) => {
@@ -123,33 +131,6 @@ async function run() {
             );
             res.send({ result });
         });
-
-
-
-
-
-        // app.put('/jamaattime/:id', async (req, res) => {
-        //     const id = req.params.id;
-        //     const filter = { _id: ObjectId(id) };
-        //     const jamaat = req.body;
-        //     const option = { upsert: true };
-        //     const updatedjamaattime = {
-        //         $set: {
-        //             fajr: jamaat.fajr,
-
-        //             zuhr: jamaat.zuhr,
-        //             asr: jamaat.asr,
-        //             magrib: jamaat.magrib,
-        //             isha: jamaat.isha,
-
-        //         }
-
-        //     }
-        //     const result = await jammatCollection.updateOne(filter, updatedjamaattime, option);
-        //     res.send(result);
-        // })
-
-
 
 
 
@@ -359,24 +340,6 @@ async function run() {
 
 
 
-        // // load all experts from mongodb
-
-        // app.get('/experts', async (req, res) => {
-        //     const query = {};
-        //     const cursor = expertsCollection.find(query);
-        //     const experts = await cursor.toArray();
-        //     res.send(experts);
-        // });
-
-
-        // app.post("/experts", async (req, res) => {
-        //     const expertAdd = req.body;
-        //     const result = await expertsCollection.insertOne(expertAdd);
-        //     res.send(result);
-        // });
-
-
-
 
 
         // load all experts from mongodb
@@ -476,15 +439,7 @@ async function run() {
             res.send(allKhutba);
         });
 
-        // //delete khutba
-        // app.delete('/allKhutba/:id', async (req, res) => {
-        //     const id = req.params.id;
-        //     const filter = {
-        //         _id: ObjectId(id)
-        //     };
-        //     const result = await khutbaCollection.deleteOne(filter);
-        //     res.send(result);
-        // })
+
 
 
 
@@ -511,12 +466,6 @@ async function run() {
         });
 
 
-        // app.get('/event/:id', async (req, res) => {
-        //     const id = req.params.id;
-        //     const query = { _id: ObjectId(id) };
-        //     const event = await eventCollection.findOne(query);
-        //     res.send(event);
-        // })
 
 
 
@@ -577,14 +526,7 @@ async function run() {
                     state: expert.state,
                     zip: expert.zip,
 
-                    // facebook: expert.facebook,
-                    // twitter: expert.twitter,
-                    // instagram: expert.instagram,
-                    // google: expert.google,
-                    // img: expert.img,
-                    // short_description: expert.short_description,
-                    // role: expert.role,
-                    // phone: expert.phone
+
                 }
 
             }
@@ -596,34 +538,12 @@ async function run() {
 
 
 
-        // app.get('/puser/:email', async (req, res) => {
-        //     const email = req.params.email;
-        //     const query = {
-        //         email: email
-
-        //     };
-        //     const allbuyer = await userCollection.find(query).toArray();
-        //     res.send(allbuyer);
-        // });
-
-
-
-
-
-
-
-        // app.get('/user', async (req, res) => {
-        //     const query = {};
-        //     const cursor = userCollection.find(query);
-        //     const users = await cursor.toArray();
-        //     res.send(users);
-        // });
 
 
 
         // an admin can only make admin
 
-        app.get('/admin/:email', verifyJWT, async (req, res) => {
+        app.get('/admin/:email', async (req, res) => {
             const email = req.params.email;
             const user = await userCollection.findOne({ email: email });
             const isAdmin = user.role === 'admin';
@@ -704,9 +624,9 @@ async function run() {
         //ssl comnmerce 
         app.post("/checkout", async (req, res) => {
             const order = req.body;
-            const { amount, telEmail, postCode, name } = order;
+            const { amount, telEmail, name, address, campaignname } = order;
 
-            if (!amount || !telEmail || !postCode || !name) {
+            if (!amount || !telEmail || !name || !address || !campaignname) {
                 return res.send({ error: "please provide all the information" })
             }
 
@@ -717,17 +637,17 @@ async function run() {
                 total_amount: order.amount,
                 currency: order.currency,
                 tran_id: transactionId, // use unique tran_id for each api call
-                success_url: `http://localhost:5000/donation/success?transactionId=${transactionId}`,
-                fail_url: `http://localhost:5000/donation/fail?transactionId=${transactionId}`,
-                cancel_url: "http://localhost:5000/donation/cancel",
+                success_url: `https://mosque-management-server.vercel.app/donation/success?transactionId=${transactionId}`,
+                fail_url: `https://mosque-management-server.vercel.app/donation/fail?transactionId=${transactionId}`,
+                cancel_url: "https://mosque-management-server.vercel.app/donation/cancel",
                 ipn_url: "http://localhost:3030/ipn",
                 shipping_method: "Courier",
-                product_name: order.name,
+                product_name: order.campaignname,
                 product_category: "Electronic",
                 product_profile: "general",
-                cus_name: order.userName,
+                cus_name: order.name,
                 cus_email: order.telEmail,
-                cus_add1: "Dhaka",
+                cus_add1: order.address,
                 cus_add2: "Dhaka",
                 cus_city: "Dhaka",
                 cus_state: "Dhaka",
@@ -740,7 +660,7 @@ async function run() {
                 ship_add2: "Dhaka",
                 ship_city: "Dhaka",
                 ship_state: "Dhaka",
-                ship_postcode: order.postCode,
+                ship_postcode: "1230",
                 ship_country: "Bangladesh",
             };
 
@@ -765,7 +685,7 @@ async function run() {
         app.post("/donation/success", async (req, res) => {
             const { transactionId } = req.query;
             if (!transactionId) {
-                return res.redirect("http://localhost:3000/donation/fail");
+                return res.redirect("https://mosque-management.web.app/donation/fail");
             }
             const result = await grantInfoCollection.updateOne(
                 { transactionId },
@@ -774,7 +694,7 @@ async function run() {
 
             if (result.modifiedCount > 0) {
                 res.redirect(
-                    `http://localhost:3000/donation/success?transactionId=${transactionId}`
+                    `https://mosque-management.web.app/donation/success?transactionId=${transactionId}`
                 );
             }
         });
@@ -783,13 +703,13 @@ async function run() {
         app.post("/donation/fail", async (req, res) => {
             const { transactionId } = req.query;
             if (!transactionId) {
-                return res.redirect("http://localhost:3000/donation/fail");
+                return res.redirect("https://mosque-management.web.app/donation/fail");
             }
             const result = await grantInfoCollection.deleteOne({ transactionId });
 
             if (result.deletedCount) {
                 res.redirect(
-                    "http://localhost:3000/donation/fail"
+                    "https://mosque-management.web.app/donation/fail"
                 );
             }
 
