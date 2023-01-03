@@ -1,47 +1,61 @@
 const express = require('express');
 const cors = require('cors');
-const jwt = require('jsonwebtoken');
 
+// const jwt = require('jsonwebtoken');
 require('dotenv').config();
-const SSLCommerzPayment = require("sslcommerz-lts");
-
-// sslcommarz
-const store_id = process.env.STORE_ID
-const store_passwd = process.env.STORE_PASS
-
-const is_live = false; //true for live, false for sandbox
-
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { query } = require('express');
+
 require('dotenv').config();
 const port = process.env.PORT || 5000;
 
 const app = express();
 
 app.use(cors());
+// const corsConfig = {
+//     origin: 'https://mosque-management.web.app',
+// }
+// app.use(cors(corsConfig))
+
 app.use(express.json());
 
+const SSLCommerzPayment = require("sslcommerz-lts");
+// sslcommarz
+const store_id = process.env.STORE_ID
+const store_passwd = process.env.STORE_PASS
 
+const is_live = false; //true for live, false for sandbox
 
-const uri = "mongodb+srv://mosque:7BSq1R4J2tdYLdOx@cluster0.8bklk.mongodb.net/?retryWrites=true&w=majority";
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.8bklk.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
 
+// const uri = "mongodb+srv://mosque:<password>@cluster0.8bklk.mongodb.net/?retryWrites=true&w=majority";
+// const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
-function verifyJWT(req, res, next) {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-        return res.status(401).send({ message: 'UnAuthorized access' });
-    }
-    const token = authHeader.split(' ')[1];
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
-        if (err) {
-            return res.status(403).send({ message: 'Forbidden access' })
-        }
-        req.decoded = decoded;
-        next();
-    });
-}
+
+// const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.ruqflxh.mongodb.net/?retryWrites=true&w=majority`;
+
+// const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
+
+
+
+
+// function verifyJWT(req, res, next) {
+//     const authHeader = req.headers.authorization;
+//     if (!authHeader) {
+//         return res.status(401).send({ message: 'UnAuthorized access' });
+//     }
+//     const token = authHeader.split(' ')[1];
+//     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
+//         if (err) {
+//             return res.status(403).send({ message: 'Forbidden access' })
+//         }
+//         req.decoded = decoded;
+//         next();
+//     });
+// }
 
 
 
@@ -65,26 +79,26 @@ async function run() {
 
 
 
-        const verifyAdmin = async (req, res, next) => {
-            const requester = req.decoded.email;
-            const requesterAccount = await userCollection.findOne({
-                email: requester,
-            });
-            if (requesterAccount.role === "admin") {
-                next();
-            } else {
-                res.status(403).send({ message: "forbidden" });
-            }
-        };
+        // const verifyAdmin = async (req, res, next) => {
+        //     const requester = req.decoded.email;
+        //     const requesterAccount = await userCollection.findOne({
+        //         email: requester,
+        //     });
+        //     if (requesterAccount.role === "admin") {
+        //         next();
+        //     } else {
+        //         res.status(403).send({ message: "forbidden" });
+        //     }
+        // };
 
 
 
 
-        app.post('/jwt', (req, res) => {
-            const user = req.body;
-            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
-            res.send({ token })
-        })
+        // app.post('/jwt', (req, res) => {
+        //     const user = req.body;
+        //     const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '8h' })
+        //     res.send({ token })
+        // })
 
 
 
@@ -481,8 +495,9 @@ async function run() {
                 $set: user,
             };
             const result = await userCollection.updateOne(filter, updateDoc, options);
-            const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '8h' })
-            res.send({ result, token });
+            // const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '8h' })
+            // res.send({ result, token });
+            res.send(result);
 
 
         })
@@ -552,7 +567,7 @@ async function run() {
 
         // make a admin and verify
 
-        app.put('/user/admin/:email', verifyJWT, async (req, res) => {
+        app.put('/user/admin/:email', async (req, res) => {
             const email = req.params.email;
             const requester = req.decoded.email;
             const requesterAccount = await userCollection.findOne({ email: requester });
