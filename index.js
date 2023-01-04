@@ -658,9 +658,9 @@ async function run() {
                 total_amount: order.amount,
                 currency: order.currency,
                 tran_id: transactionId, // use unique tran_id for each api call
-                success_url: `https://mosque-management-server.vercel.app/donation/success?transactionId=${transactionId}`,
-                fail_url: `https://mosque-management-server.vercel.app/donation/fail?transactionId=${transactionId}`,
-                cancel_url: "https://mosque-management-server.vercel.app/donation/cancel",
+                success_url: `https://mosque-management.onrender.com/donation/success?transactionId=${transactionId}`,
+                fail_url: `https://mosque-management.onrender.com/donation/fail?transactionId=${transactionId}`,
+                cancel_url: "https://mosque-management.onrender.com/donation/cancel",
                 ipn_url: "http://localhost:3030/ipn",
                 shipping_method: "Courier",
                 product_name: order.campaignname,
