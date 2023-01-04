@@ -7,7 +7,7 @@ require('dotenv').config();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const { query } = require('express');
 
-require('dotenv').config();
+// require('dotenv').config();
 const port = process.env.PORT || 5000;
 
 const app = express();
@@ -29,6 +29,12 @@ const is_live = false; //true for live, false for sandbox
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.8bklk.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
+
+
+// const uri = 'mongodb+srv://mosque:5QIvxbZwzSx8kWGY@cluster0.8bklk.mongodb.net/?retryWrites=true&w=majority';
+// const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
+
+
 
 
 // const uri = "mongodb+srv://mosque:<password>@cluster0.8bklk.mongodb.net/?retryWrites=true&w=majority";
