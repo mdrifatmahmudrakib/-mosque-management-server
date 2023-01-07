@@ -12,11 +12,11 @@ const port = process.env.PORT || 5000;
 
 const app = express();
 
-app.use(cors());
-// const corsConfig = {
-//     origin: 'https://mosque-management.web.app',
-// }
-// app.use(cors(corsConfig))
+// app.use(cors());
+const corsConfig = {
+    origin: 'https://mosque-management.web.app',
+}
+app.use(cors(corsConfig))
 
 app.use(express.json());
 
